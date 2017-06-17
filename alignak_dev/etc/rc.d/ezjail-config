@@ -1,0 +1,134 @@
+#!/bin/sh
+#
+# BEFORE: DAEMON
+# PROVIDE: ezjail-config
+#
+
+. /etc/rc.subr
+
+name=ezjail-config
+start_cmd=flavour_setup
+
+flavour_setup() {
+
+# Remove traces of ourself
+# N.B.: Do NOT rm $0, it points to /etc/rc
+##########################
+rm -f "/etc/rc.d/ezjail-config"
+
+# Groups
+#########
+#
+# You will probably start with some groups your users should be in
+
+# pw groupadd -q -n coders # -g 1004
+# pw groupadd -q -n sales # -g 1005
+
+# Users
+########
+#
+# You might want to add some users. The password is to be provided in the
+# encrypted form as found in /etc/master.passwd.
+# The example password here is "admin"
+# Refer to crypt(3) and pw(8) for more information
+
+# echo -n '$1$p75bbfK.$Kz3dwkoVlgZrfLZdAXQt91' |\
+# pw useradd -n admin -u 1001 -s /bin/sh -m -d /home/admin -G wheel -c 'Admin User' -H 0
+# echo -n '$1$p75bbfK.$Kz3dwkoVlgZrfLZdAXQt91' |\
+# pw useradd -n saag -u 1002 -s /bin/sh -m -d /home/saag -G coders -c 'Mutton Saag' -H 0
+# echo -n '$1$p75bbfK.$Kz3dwkoVlgZrfLZdAXQt91' |\
+# pw useradd -n mac -u 1002 -s /bin/sh -m -d /home/mac -G sales -c 'Big Mac' -H 0
+
+# Files
+########
+#
+# You can now give files to users just created
+
+# chown -R admin:coders /usr/local/cvsroot
+# chown -R admin:sales /usr/local/nfs/sales
+
+# Packages
+###########
+#
+# Install all packages previously put to /pkg
+# Remove package files afterwards
+
+cd /usr/ports/ports-mgmt/pkg && make install clean
+
+pkg update
+
+# [ -d /pkg ] && cd /pkg && pkg_add /pkg/*
+# rm -rf /pkg
+
+# Install packages need to install alignak
+pkg install -y git
+pkg install -y py27-pip
+
+#####################################
+# it install 
+#        git: 2.13.0
+#        expat: 2.2.0_1
+#        p5-Authen-SASL: 2.16_1
+#        p5-GSSAPI: 0.28_1
+#        perl5: 5.24.1
+#        p5-Digest-HMAC: 1.03_1
+#        python27: 2.7.13_3
+#        readline: 6.3.8
+#        indexinfo: 0.2.6
+#        libffi: 3.2.1
+#        gettext-runtime: 0.19.8.1_1
+#        p5-Error: 0.17024
+#        curl: 7.54.0
+#        libnghttp2: 1.21.0
+#        ca_root_nss: 3.30.2
+#        pcre: 8.40
+#        cvsps: 2.1_2
+#####################################
+
+# install alignak
+#################
+
+cd /root
+mkdir git
+cd git
+git clone https://github.com/Alignak-monitoring/alignak.git
+cd alignak
+pip install .
+
+# get rc scripts to start alignak
+cd ..
+git clone https://github.com/Alignak-monitoring/alignak-packaging.git
+cd alignak-packaging/alignak/for_freebsd
+cp alignak-* /usr/local/etc/rc.d/
+
+# add lines in rc.conf to start alignak when start the jail
+echo 'alignak_broker_enable="YES"' >> /etc/rc.conf
+echo "\n";
+echo 'alignak_poller_enable="YES"' >> /etc/rc.conf
+echo "\n";
+echo 'alignak_scheduler_enable="YES"' >> /etc/rc.conf
+echo "\n";
+echo 'alignak_reactionner_enable="YES"' >> /etc/rc.conf
+echo "\n";
+echo 'alignak_receiver_enable="YES"' >> /etc/rc.conf
+echo "\n";
+echo 'alignak_arbiter_enable="YES"' >> /etc/rc.conf
+echo "\n";
+
+# Postinstall
+##############
+#
+# Your own stuff here, for example set login shells that were only
+# installed just before.
+
+# Please note, that for all network related stuff like ports,
+# package remote fetching, etc. you need a sane /etc/resolv.conf
+
+# chpass -s /usr/local/bin/bash admin
+# pkg_add -r pico
+# cd /usr/ports/sysutils/screen && make install
+
+}
+
+run_rc_command "$1"
+
