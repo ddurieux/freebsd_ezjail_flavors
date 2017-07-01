@@ -55,7 +55,14 @@ pkg update
 # Install packages need to install alignak
 pkg install -y git
 pkg install -y py27-pip
+pkg install -y iconv
 
+# install packages used for website scenarii
+#pkg install -y ruby23-gems
+pkg install -y rubygem-capybara
+
+/usr/local/bin/gem install iconv
+/usr/local/bin/gem install cucumber-nagios
 
 # install alignak
 #################
@@ -131,6 +138,48 @@ echo "pip install .\n" >> /root/install_check_packs.sh
 chmod 755 /root/install_check_packs.sh
 
 
+# Install example website scenario
+mkdir /root/scenarii
+cd /root/scenarii
+
+/usr/local/bin/cucumber-nagios-gen project websites
+cd websites
+/usr/local/bin/bundle install
+# patch features/support/env.rb
+cat >> features/support/env.rb << EOF
+
+Webrat.configure do |config|
+ config.mode = :rails
+ config.open_error_files = false
+end
+EOF
+
+# patch features/steps/http_steps.rb
+sed -i '' 's/response.body.to_s.should =~ \/#{text}\/m/expect(response.body).to match(\/#{text}\/m)/g' features/steps/http_steps.rb
+
+# create a website to test
+/usr/local/bin/cucumber-nagios-gen feature mywebsite.com glpi
+
+sed -i '' 's/Then the request should succeed//g' features/mywebsite.com/glpi.feature
+
+cat >> features/mywebsite.com/glpi.feature << EOF
+    Then I should see "Authentification"
+    When I fill in "login_name" with "glpi"
+      And I fill in "login_password" with "glpi"
+      And I press "Envoyer"
+    Then I should see "window.location='/front/central.php'"
+    When I go to "https://mywebsite.com/front/central.php"
+    Then I should see "Vue personnelle"
+    When I follow "Assistance"
+    Then I should see "De 1 "
+EOF
+
+# modification into cucumber-nagios, to work with ruby 2.x
+sed -i '' 's/def initialize(step_mother, io, options={}/def initialize(step_mother, io, options/g' /usr/local/lib/ruby/gems/2.3/gems/cucumber-nagios-0.9.2/lib/cucumber/formatter/nagios.rb
+sed -i '' 's/def after_step_result(keyword, step_match, multiline_arg, status, exception, source_indent, background)/def after_step_result(keyword, step_match, multiline_arg, status, exception, source_indent, background, scenario_line_num)/g' /usr/local/lib/ruby/gems/2.3/gems/cucumber-nagios-0.9.2/lib/cucumber/formatter/nagios.rb
+
+# command used for the check in Alignak : cd /root/scenarii/websites && /usr/local/bin/cucumber-nagios features/mywebsite.com/glpi.feature
+
 
 # Postinstall
 ##############
@@ -144,7 +193,6 @@ chmod 755 /root/install_check_packs.sh
 # chpass -s /usr/local/bin/bash admin
 # pkg_add -r pico
 # cd /usr/ports/sysutils/screen && make install
-
 }
 
 run_rc_command "$1"
