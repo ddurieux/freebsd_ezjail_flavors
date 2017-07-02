@@ -168,7 +168,7 @@ cat >> features/mywebsite.com/glpi.feature << EOF
       And I fill in "login_password" with "glpi"
       And I press "Envoyer"
     Then I should see "window.location='/front/central.php'"
-    When I go to "https://mywebsite.com/front/central.php"
+    When I go to "http://mywebsite.com/front/central.php"
     Then I should see "Vue personnelle"
     When I follow "Assistance"
     Then I should see "De 1 "
