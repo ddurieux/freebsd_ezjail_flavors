@@ -74,6 +74,12 @@ cd git
 cd alignak
 /usr/local/bin/pip install .
 
+# Install backend modules
+cd ..
+/usr/local/bin/git clone https://github.com/Alignak-monitoring-contrib/alignak-module-backend.git
+cd alignak-module-backend
+/usr/local/bin/pip install .
+
 # get rc scripts to start alignak
 cd ..
 /usr/local/bin/git clone https://github.com/Alignak-monitoring/alignak-packaging.git
