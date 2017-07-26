@@ -162,6 +162,8 @@ EOF
 
 # patch features/steps/http_steps.rb
 sed -i '' 's/response.body.to_s.should =~ \/#{text}\/m/expect(response.body).to match(\/#{text}\/m)/g' features/steps/http_steps.rb
+# patch features/steps/benchmark_steps.rb
+sed -i '' 's/(@scenario_start_time - Time.now).should > time.to_i * -1/expect(Time.now.to_i - @scenario_start_time).to be < time.to_i/g' features/steps/benchmark_steps.rb
 
 # create a website to test
 /usr/local/bin/cucumber-nagios-gen feature mywebsite.com glpi
@@ -170,6 +172,7 @@ sed -i '' 's/Then the request should succeed//g' features/mywebsite.com/glpi.fea
 
 cat >> features/mywebsite.com/glpi.feature << EOF
     Then I should see "Authentification"
+    Given I am benchmarking
     When I fill in "login_name" with "glpi"
       And I fill in "login_password" with "glpi"
       And I press "Envoyer"
@@ -178,6 +181,7 @@ cat >> features/mywebsite.com/glpi.feature << EOF
     Then I should see "Vue personnelle"
     When I follow "Assistance"
     Then I should see "De 1 "
+    Then the elapsed time should be less than 10 seconds
 EOF
 
 # modification into cucumber-nagios, to work with ruby 2.x
